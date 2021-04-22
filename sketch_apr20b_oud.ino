@@ -2,16 +2,15 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <rfid_storage.h>
 
 #include <string>
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 
-// define pins of the rgb led(s)
-int ledPinBlue = 2;
-int ledPinGreen = 3;
-int ledPinRed = 4;
+// LEDS
+#define S0 5
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 #define OLED_RESET     4 // Reset pin # (or -1 if sharing Arduino reset pin)
@@ -19,7 +18,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 struct user_data{
     String firstName;
-    uint_fast32_t id;
+    uint64_t id;
     String lastName;
     String mail;
     String username;
@@ -30,13 +29,13 @@ struct person_data{
     user_data userData;
 
     person_data() : id(0), userData(user_data{
-      "firstName",
-      0,
-      "lastname",
-      "mail",
-      "username"
-      }
-    ) {}
+                                            "firstName",
+                                            0,
+                                            "lastname",
+                                            "mail",
+                                            "username"
+                                    }
+            ) {}
 
     person_data(int id, const user_data &userData) : id(id), userData(userData) {}
 };
@@ -139,49 +138,39 @@ void draw_not_valid(){
   display.display();
 }
 
-//RFID storage for person_data
-class RFID_Storage{
-  private:
-    person_data person_data_storage[255];
-    int index = 0;
 
-  public:
-    bool add(const person_data& id){
-        if(index <= 255) {
-            person_data_storage[index] = id;
-            index++;
-            return true;
+
+class RFID_Reader{ //TEMP
+public:
+    uint64_t tag0 = 0x4464302869dcf56b; //Daan  0d8bc15368733b14
+    uint64_t tag1 = 0x0e6c4cc2844336bb; //      4783bdb985ecf8c4
+    uint64_t tag2 = 0xde0645963c332d19; //      97e9b4ed3d9ce366
+    uint64_t tag3 = 0x9fe5f6f1cb01600d; //      d60a078acaaeae72
+
+    uint64_t tag4 = 0x656b73c2a9bcdd21;
+    uint64_t tag5 = 0x9d765f78dd95daa7;
+    uint64_t tag6 = 0x79ab9d6b99ad5c21;
+    uint64_t tag7 = 0x44fc69f86c9d04c3;
+
+    uint64_t read(const bool& known){
+        if(known){
+            return tag0;
+        }else{
+            return tag4;
         }
-        return false;
-    }
-
-    signed int locate_id(const uint_fast32_t & id){
-        for(int i = 0; i < index; i++){
-            if(person_data_storage[i].userData.id == id){
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    person_data get_from_id(const uint_fast32_t& id){
-        signed int location = locate_id(id);
-        if(location >= 0) {
-            return person_data_storage[location];
-        }return person_data();
     }
 };
 
 class Server_temp{
     //currently not not using the api just predefined numbers.
-  private:
+private:
     RFID_Storage& rfidStorage;
 
     person_data personData0{
             0,
             user_data{
                 "Daan",
-                1,
+                0x0d8bc15368733b14,
                 "Kerbusch",
                 "daankerbusch@gmail.com",
                 "Strijderdaan"
@@ -192,7 +181,7 @@ class Server_temp{
             0,
             user_data{
                     "Apple",
-                    2,
+                    0x4783bdb985ecf8c4,
                     "lastApple",
                     "Apple@gmail.com",
                     "AppleBest"
@@ -203,7 +192,7 @@ class Server_temp{
             0,
             user_data{
                     "Pear",
-                    3,
+                    0x97e9b4ed3d9ce366,
                     "lastPear",
                     "Pear@gmail.com",
                     "PearBest"
@@ -214,7 +203,7 @@ class Server_temp{
             0,
             user_data{
                     "Orange",
-                    4,
+                    0xd60a078acaaeae72,
                     "lastOrange",
                     "Orange@gmail.com",
                     "OrangeBest"
@@ -222,7 +211,7 @@ class Server_temp{
     };
 
 
-  public:
+public:
     Server_temp(RFID_Storage &rfidStorage) : rfidStorage(rfidStorage) {
         rfidStorage.add(personData0);
         rfidStorage.add(personData1);
@@ -231,52 +220,45 @@ class Server_temp{
     }
 };
 
-class encryption32{
-  private:
-    uint_fast32_t key;
+class encryption64{
+private:
+    uint64_t key;
 
-  public:
-    encryption32(uint_fast32_t key) : key(key) {}
+public:
+    encryption64(uint64_t key) : key(key) {}
 
-    uint_fast32_t encrypt(const uint_fast32_t& id){
+    uint64_t encrypt_id(const uint64_t& id){
         return id^key;
     }
 
-    uint_fast32_t decrypt(const uint_fast32_t& id){
+    uint64_t decrypt_id(const uint64_t& id){
         return key^id;
     }
 };
 
-//Function for setting the color of the leds
-void setRGB(const int& red, const int& green, const int& blue){
-  if(red > 255 || red < 0 || green > 255 || green < 0 || blue > 255 | blue < 0){
-    return;
-  }
-  analogWrite(ledPinRed, red);
-  analogWrite(ledPinGreen, green);
-  analogWrite(ledPinBlue, blue);
-}
-
 class RFID_Control{
 private:
+    RFID_Reader& rfidReader;
     Server_temp& server;
     RFID_Storage& rfidStorage;
 
-    const uint_fast32_t encryption_key;
+    const uint64_t encryption_key;
 
 public:
     RFID_Control(
+            RFID_Reader &rfidReader,
             Server_temp &server,
             RFID_Storage &rfidStorage,
-            const uint_fast32_t encryptionKey) :
+            const uint64_t encryptionKey) :
+        rfidReader(rfidReader),
         server(server),
         rfidStorage(rfidStorage),
         encryption_key(encryptionKey)
     {}
 
-    void run(uint_fast32_t input){
-        //uint_fast32_t input = rfidReader.read(true);
-        //input = encryption32(encryption_key).decrypt(input);
+    void run(){
+        uint64_t input = rfidReader.read(false);
+        input = encryption64(encryption_key).decrypt_id(input);
         if(rfidStorage.locate_id(input) >= 0){
             person_data personData = rfidStorage.get_from_id(input);
 
@@ -285,23 +267,20 @@ public:
             Serial.println(personData.userData.firstName);
             Serial.println(personData.userData.lastName);
 
-            setRGB(0,255,0);
-
             delay(2000);
-            setRGB(0,0,0);
             draw_idle_screen("Bartjes BAR", "Oudjaarsavond");
             
         }else{
             draw_not_valid();
             
-            setRGB(255,0,0);
+            digitalWrite(S0,HIGH);
             Serial.println(F("unknown id"));
             delay(250);
-            setRGB(0,0,0);
+            digitalWrite(S0,LOW);
             delay(250);
-            setRGB(255,0,0);
+            digitalWrite(S0,HIGH);
             delay(250);
-            setRGB(0,0,0);
+            digitalWrite(S0,LOW);
             delay(1250);
 
             draw_idle_screen("Bartjes BAR", "Oudjaarsavond");
@@ -312,10 +291,8 @@ public:
 
 
 void setup() {
-  //Set pinmode of the rgb pins
-  pinMode(ledPinBlue, OUTPUT);
-  pinMode(ledPinGreen, OUTPUT);
-  pinMode(ledPinRed, OUTPUT);
+  //pin init
+  pinMode(S0, OUTPUT);
   
   Serial.begin(9600);
 
@@ -331,17 +308,17 @@ void setup() {
 
   Server_temp server(storage);
 
-  uint_fast32_t key = 0x14D2405C;
+  uint64_t key = 0x49eff17b01afce7f;
 
-  RFID_Control rfidControl(server, storage, key);
+  RFID_Control rfidControl(reader, server, storage, key);
 
-  setRGB(0,0,0);
+  //digitalWrite(S0,HIGH);
 
   draw_idle_screen("Bartjes BAR", "Oudjaarsavond");
 
   delay(2000);
 
-  rfidControl.run();
+   rfidControl.run();
  
 }
 
