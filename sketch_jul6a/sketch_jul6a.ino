@@ -18,11 +18,6 @@ void setup() {
   Serial.println();
 
   barTap::control control(0x14D2405C);
-  //control.displayAddedToSessionScreen(1734);
-  //delay(1000);
-  //control.displayAddedToSessionScreen(3);
-  //delay(1000);
-  //control.displayAddedToSessionScreen(1);
   control.run();
 
   //barTap::rgb rgb;
@@ -71,6 +66,15 @@ void setup() {
 
   /*barTap::nfc nfcReader;
   nfcReader.getInfo();
+  while(true){
+    yield();
+    int r = nfcReader.read();
+    if(r != -1){
+      Serial.println(String(r));
+    }
+    
+  }*/
+  /*
 
   int r = 0;
 

@@ -16,6 +16,19 @@ namespace barTap{
       nfc();
 
       void getInfo();
-      int read();
+      int readClassic();
+      int readUL();
+
+      int read(){
+          int result0 = readClassic();
+          if (result0 >= 0){
+              return result0;
+          }//else
+          result0 = readUL();
+          if (result0 >= 0){
+              return result0;
+          }//else
+          return -1;
+      };
   };
 }

@@ -2,7 +2,7 @@
 
 //      api
 bool barTap::api::startWifi(){
-  Serial.println("startWifi");
+  //Serial.println("startWifi");
 
   //counter
   int counter0 = 0;
@@ -14,11 +14,11 @@ bool barTap::api::startWifi(){
     counter0++;
 
     delay(1000);
-    Serial.println("Connecting..");
+    //Serial.println("Connecting..");
 
   }
   if(counter0 >= 10){
-    Serial.println("startWifi failed after 10x");
+    //Serial.println("startWifi failed after 10x");
     return false;
   }return true;
 }
@@ -48,8 +48,8 @@ bool barTap::api::login(){
     refresh_token = httpClient.header("refresh_token");  
   }else{
     Correct = false;
-    Serial.println("Authentication failed: ");
-    Serial.println(httpCode);
+    //Serial.println("Authentication failed: ");
+    //Serial.println(httpCode);
   }
 
   httpClient.end(); //close http
@@ -58,7 +58,7 @@ bool barTap::api::login(){
 }
 
 bool barTap::api::refresh_login(){
-  Serial.println("refreshing login!");
+  //Serial.println("refreshing login!");
 
   StaticJsonDocument<512> doc; //512 bytes
   doc["accessToken"] = access_token;
@@ -84,8 +84,8 @@ bool barTap::api::refresh_login(){
     refresh_token = httpClient.header("refresh_token");  
   }else{
     Correct = false;
-    Serial.println("Authentication refresh failed: ");
-    Serial.println(httpCode);
+    //Serial.println("Authentication refresh failed: ");
+    //Serial.println(httpCode);
   }
 
   httpClient.end(); //close http
@@ -121,7 +121,7 @@ barTap::api::api(HTTPClient& httpClient_, barTap::display* display_):
 
   //If wifi is connected get token
   if(wifi_connection){
-    logged_in = login();
+    logged_in = login();logged_in = login();
     if(logged_in){
       Serial.println("got token");
     }
@@ -151,7 +151,7 @@ barTap::session_return barTap::api::getSession(const int& BarID, bool retry){
       return session_return(0,"403", false, httpCode);
     }
     refresh_login();
-    Serial.println("403 retrying!");
+    //Serial.println("403 retrying!");
     httpClient.end(); //close http
     return getSession(BarID, true);
   }
@@ -182,7 +182,7 @@ String barTap::api::getBarName(const int& BarID, bool retry){ //get the barname
       return "";
     }
     refresh_login();
-    Serial.println("403 retrying!");
+    //Serial.println("403 retrying!");
     httpClient.end(); //close http
     return getBarName(BarID, true);
   }
@@ -215,7 +215,7 @@ int barTap::api::addPersonToSession(const int& sessionID, const int& personID, c
       return httpCode;
     }
     refresh_login();
-    Serial.println("403 retrying!");
+    //Serial.println("403 retrying!");
     httpClient.end(); //close http
     return addPersonToSession(sessionID, personID, BarID, true);
   }
@@ -270,7 +270,7 @@ String barTap::api::getMoneyDue(const int& sessionID, const int& personID, const
     }else if(httpCode == 403){
       if(!retry){
         refresh_login();
-        Serial.println("403 retrying!");
+        //Serial.println("403 retrying!");
         httpClient.end(); //close http
         return getMoneyDue(sessionID, personID, BarID, true);
       }//else:
@@ -309,7 +309,7 @@ barTap::firstAndLastName barTap::api::getName(const int& personID, const int& Ba
     }else if(httpCode == 403){
       if(!retry){
         refresh_login();
-        Serial.println("403 retrying!");
+        //Serial.println("403 retrying!");
         httpClient.end(); //close http
         return getName(personID, BarID, true);
       }//else:

@@ -81,11 +81,9 @@ namespace barTap{
       }
 
       void run(){
-        int r;
-
         while(true){
           yield();
-          r = nfcReader.read();
+          int r = nfcReader.read();
           if(r >=0){
             r = encryption.decrypt(r);
             handlePersonID(r);
