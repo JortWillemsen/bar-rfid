@@ -8,8 +8,12 @@
 
 //API WIKI = http://tungstun-bar-api.herokuapp.com/swagger-ui/index.html
 
-#define STASSID "Daan-Xps"
-  #define STAPSK  "Dkh11hkd"
+#define STASSID "FRITZ!Box 5490 SW"
+  #define STAPSK  "93226223717081710843"
+//
+
+/*#define STASSID "Daan-Xps"
+  #define STAPSK  "Dkh11hkd"*/
 //
 
 /*#define STASSID "ORBI Wifi maurice-nienke"
